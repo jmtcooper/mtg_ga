@@ -17,7 +17,7 @@ gene_list = [
 ("Chandra's Spitfire", 2, "2 R"), 
 ("Acidic Slime", 2, "3 G G"), ("Autumn's Veil", 2, "G"), ("Awakener Druid", 2, "2 G"),
 ("Back to Nature", 2, "1 G"), ("Llanowar Elves", 2, "G"), ("Birds of Paradise", 2, "G"),
-("Brindle Board", 2, "2 G"), ("Cudgel Troll", 2, "2 G G"), ("Runeclaw Bear", 2, "1 G"),
+("Brindle Boar", 2, "2 G"), ("Cudgel Troll", 2, "2 G G"), ("Runeclaw Bear", 2, "1 G"),
 ("Giant Growth", 2, "G"), ("Giant Spider", 2, "3 G"), ("Cultivate", 2, "2 G"), ("Dryad's Favor", 2, "G"),
 ("Duskdale Wurm", 2, "5 G G"), ("Elvish Archdruid", 2, "1 G G"), ("Fauna Shaman", 2, "1 G"),
 ("Fog", 2, "G"),
@@ -55,15 +55,12 @@ def play_deck(deck):
    battlefield = []
    played = True
 
-   while (len(deck) > 0):
+   while played and len(deck) > 0:
       (hand, deck, graveyard, exile, battlefield, played) = play_turn(hand, deck, graveyard, exile, battlefield)
 
-      print hand
-      print battlefield
+      #print "%r %r %r %r %r %r" % (hand,deck,graveyard,exile,battlefield,played)
       
       num_turns = num_turns + 1
-      if (not played): 
-         break
 
    return num_turns
 
@@ -73,6 +70,7 @@ def mana_calc(battlefield):
    for i in range(len(battlefield)):
       if (battlefield[i][1] == 1):
          mana = mana + battlefield[i][2]
+
    return mana   
 
 def test_mana_calc():
@@ -84,7 +82,6 @@ def test_mana_calc():
    print battlefield
    print mana_calc(battlefield)
 
-####################
 def is_castable(card, available_mana):
    mana_cost = card[2].split(" ")
     
@@ -108,23 +105,44 @@ def is_castable(card, available_mana):
    
    return True
 
-def cast_hand_card(hand, battlefield, available_mana):
-
+def play_hand_card(hand, battlefield, available_mana):
+   
+   #print "Hand before casting: %r " % (hand,)
+   #print "Bord before casting: %r " % (battlefield,)
    for i in range(len(hand)):
       if hand[i][1] == 2 and is_castable(hand[i], available_mana):
          battlefield.append(hand[i])
          hand = hand[0:i] + hand[i+1:]
          
-         print "Hand after casting: %r " % (hand,)
-         print "Bord after casting: %r " % (battlefield,)
-         break
-
-   return (hand, battlefield, available_mana)
+         #print "Hand after casting: %r " % (hand,)
+         #print "Bord after casting: %r " % (battlefield,)
+         return (hand, battlefield, available_mana, True)
+   
+   return (hand, battlefield, available_mana, False)
 
 def test_is_castable():
    is_castable(gene_list[random.randint(0, len(gene_list) - 1)], "BUWGR")
 
-############################
+def play_land(hand, battlefield, available_mana):
+
+   # determine is_castable with each type of land in hand 
+   for i in range(len(hand)):
+      temp_mana = available_mana
+      if hand[i][1] == 1:
+         temp_mana = temp_mana + hand[i][2]
+         castable = False
+         for j in range(len(hand)):
+            if hand[j][1] == 2 and is_castable(hand[j], temp_mana):
+               castable = True
+               break 
+
+         if castable:
+            battlefield.append(hand[i])
+            hand = hand[0:i] + hand[i+1:] 
+            available_mana = temp_mana
+            break
+
+   return (hand, battlefield, available_mana)
 
 def play_turn(hand, deck, graveyard, exile, battlefield):
    played = False
@@ -136,14 +154,22 @@ def play_turn(hand, deck, graveyard, exile, battlefield):
    # check battlefield to see how much mana is available
    available_mana = mana_calc(battlefield)
 
-   print "Available mana: " + available_mana
+   #print "Available mana: " + available_mana
 
-   print "Current Hand: %r" % (hand,)
+   #print "Current Hand: %r" % (hand,)
    # cast a card in hand if possible
-   (hand, battlefield, available_mana) = cast_hand_card(hand, battlefield, available_mana)
+   (hand, battlefield, available_mana, played) = play_hand_card(hand, battlefield, available_mana)
 
    # otherwise, play a land to move closer to casting a card in hand 
-   # cast a card in hand if possible
+   if not played:
+      (hand, battlefield, available_mana) = play_land(hand, battlefield, available_mana)
+
+      #print "Available Mana now: " + available_mana
+
+      # cast a card in hand if possible
+      (hand, battlefield, available_mana, played) = play_hand_card(hand, battlefield, available_mana)
+   #else:
+      #print "Played card: " + available_mana
        
    return (hand, deck, graveyard, exile, battlefield, played)
 
@@ -182,7 +208,9 @@ def main():
    rank_population(population)
 
    while (population[0][0] != 13):
+      # elitism, crossover, mutation, fitness
       rank_population(population)
+      print population
 
 # test_mana_calc()
 # test_is_castable()
