@@ -27,7 +27,7 @@ gene_list = [
 ]
 
 # each chromosome - deck of 20 cards
-chrom_size = 40
+chrom_size = 20
 
 # - read text file to generate list of 20 random cards (land/spells)?
 # start by pulling a random pile from the genelist
@@ -41,7 +41,12 @@ def create_chromosome(size):
 # fitness - number of turns that a spell can be successfully cast
 # perfect fit - spell cast all 13 turns
 def fitness(chrom):
-   return (play_deck(chrom[1]), chrom[1])
+   #print "Before playdeck - %r" % (chrom[1],)
+   # need to play with a copy of the deck, hence [:]
+   (x,y) = (play_deck(chrom[1][:]), chrom[1]) 
+   #print "After playdeck - %r" % (chrom[1],)
+
+   return (x,y) 
 
 def play_deck(deck):
    random.shuffle(deck)
@@ -58,7 +63,6 @@ def play_deck(deck):
    while played and len(deck) > 0:
       (hand, deck, graveyard, exile, battlefield, played) = play_turn(hand, deck, graveyard, exile, battlefield)
 
-      #print "%r %r %r %r %r %r" % (hand,deck,graveyard,exile,battlefield,played)
       if played:
          num_turns = num_turns + 1
 
@@ -106,16 +110,11 @@ def is_castable(card, available_mana):
    return True
 
 def play_hand_card(hand, battlefield, available_mana):
-   
-   #print "Hand before casting: %r " % (hand,)
-   #print "Bord before casting: %r " % (battlefield,)
    for i in range(len(hand)):
       if hand[i][1] == 2 and is_castable(hand[i], available_mana):
          battlefield.append(hand[i])
          hand = hand[0:i] + hand[i+1:]
          
-         #print "Hand after casting: %r " % (hand,)
-         #print "Bord after casting: %r " % (battlefield,)
          return (hand, battlefield, available_mana, True)
    
    return (hand, battlefield, available_mana, False)
@@ -154,38 +153,24 @@ def play_turn(hand, deck, graveyard, exile, battlefield):
    # check battlefield to see how much mana is available
    available_mana = mana_calc(battlefield)
 
-   #print "Available mana: " + available_mana
-
-   #print "Current Hand: %r" % (hand,)
    # cast a card in hand if possible
    (hand, battlefield, available_mana, played) = play_hand_card(hand, battlefield, available_mana)
 
    # otherwise, play a land to move closer to casting a card in hand
    if not played:
       (hand, battlefield, available_mana) = play_land(hand, battlefield, available_mana)
-
-      #print "Available Mana now: " + available_mana
-
       # cast a card in hand if possible
       (hand, battlefield, available_mana, played) = play_hand_card(hand, battlefield, available_mana)
-   #else:
-      #print "Played card: " + available_mana
        
    return (hand, deck, graveyard, exile, battlefield, played)
 
 def rank_population(pop):
-   max = 0
-   print "pop size %d" % (len(pop),)
-   print "Before Fitness: %r" % (pop[0],)
    for i in range(len(pop)):
+      print "Fitness 1 %d" % pop[i][0]
       pop[i] = fitness(pop[i])
-      print pop[i]
-      print pop[i][0]
+      print "Fitness 2 %d" % pop[i][0]
 
    pop.sort(reverse=True)
-   print "After Fitness: %r" % (pop[0],)
-   for i in range(len(pop)):
-      print pop[i][0]
 
    return pop
 
@@ -212,19 +197,36 @@ elitism = .1
 def main():
    #each item in population has a fitness value and a deck list (chromosome)
    population = []
+
+   print "Initializing population..."
+
    for i in range(pop_size):
       population.append((0, create_chromosome(chrom_size)))
 
+   print "Calculating population..."
    population = rank_population(population)
+
+   print "Best fit: %d " % (population[0][0],) 
+   print "Best dck: %r " % (population[0][1],) 
 
    elitism_pos = int(elitism * pop_size)
    
-   max_generations = 10
+   max_generations = 2
    gen = 0
+   max = 0
    while (population[0][0] != 33 and gen <= max_generations):
+      if max < population[0][0]:
+         max = population[0][0]
+
+      #print "1 - Best Fitness: %d" % (population[0][0],) 
+      #print "1 - Best Deck: %r" % (population[0][1],) 
+      
       gen = gen + 1
       next_gen_pop = population
 		
+      #print "2 - Best Fitness: %d" % (next_gen_pop[0][0],) 
+      #print "2 - Best Deck: %r" % (next_gen_pop[0][1],) 
+
       # elitism, crossover, mutation, fitness
       for i in range(elitism_pos, pop_size): 
 
@@ -235,14 +237,21 @@ def main():
          if random.random() <= mutationRate:
                  next_gen_pop = next_gen_pop[0:i] + [(0,mutation(population[i][1]))] + next_gen_pop[i+1:]
 
-      next_gen_pop = rank_population(next_gen_pop)
-     
-      print "gen %d" % (gen,)
-      print next_gen_pop[0]
+      #print "3 - Best Fitness: %d" % (next_gen_pop[0][0],) 
+      #print "3 - Best Deck: %r" % (next_gen_pop[0][1],) 
 
+      next_gen_pop = rank_population(next_gen_pop)
+
+      #print "4 - Best Fitness: %d" % (next_gen_pop[0][0],) 
+      #print "4 - Best Deck: %r" % (next_gen_pop[0][1],) 
+     
       population = next_gen_pop
 
-   print population[0]
+      #print "5 - Best Fitness: %d" % (population[0][0],) 
+      #print "5 - Best Deck: %r" % (population[0][1],) 
+
+      print "Gen: %d   Max fitness: %d   Current best fitness: %d" % (gen,max,population[0][0])
+
 # test_mana_calc()
 # test_is_castable()
 
