@@ -27,7 +27,7 @@ gene_list = [
 ]
 
 # each chromosome - deck of 20 cards
-chrom_size = 20
+chrom_size = 40
 
 # - read text file to generate list of 20 random cards (land/spells)?
 # start by pulling a random pile from the genelist
@@ -59,8 +59,8 @@ def play_deck(deck):
       (hand, deck, graveyard, exile, battlefield, played) = play_turn(hand, deck, graveyard, exile, battlefield)
 
       #print "%r %r %r %r %r %r" % (hand,deck,graveyard,exile,battlefield,played)
-      
-      num_turns = num_turns + 1
+      if played:
+         num_turns = num_turns + 1
 
    return num_turns
 
@@ -174,10 +174,20 @@ def play_turn(hand, deck, graveyard, exile, battlefield):
    return (hand, deck, graveyard, exile, battlefield, played)
 
 def rank_population(pop):
+   max = 0
+   print "pop size %d" % (len(pop),)
+   print "Before Fitness: %r" % (pop[0],)
    for i in range(len(pop)):
       pop[i] = fitness(pop[i])
+      print pop[i]
+      print pop[i][0]
 
-   return pop.sort()
+   pop.sort(reverse=True)
+   print "After Fitness: %r" % (pop[0],)
+   for i in range(len(pop)):
+      print pop[i][0]
+
+   return pop
 
 # crossover - basic one point crossover
 crossover_rate = .8
@@ -192,7 +202,7 @@ def crossover(x,y):
 mutationRate = .25
 def mutation(chrom):
    pos = random.randint(0, chrom_size - 1)
-   chrom[pos] = gene_list[random.randint(0, len(gene_list - 1))]
+   chrom[pos] = gene_list[random.randint(0, len(gene_list) - 1)]
 
    return chrom
 
@@ -205,27 +215,34 @@ def main():
    for i in range(pop_size):
       population.append((0, create_chromosome(chrom_size)))
 
-   rank_population(population)
-	
-   elitism_pos = int(elitism * pop_size)
+   population = rank_population(population)
 
-   max_generations = 100
+   elitism_pos = int(elitism * pop_size)
+   
+   max_generations = 10
    gen = 0
-   while (population[0][0] != 13 and gen <= max_generations):
+   while (population[0][0] != 33 and gen <= max_generations):
       gen = gen + 1
-      # elitism, crossover, mutation, fitness
+      next_gen_pop = population
 		
-      for i in range(elitism_pos + 1, pop_size): 
-         if random.random() <= crossover:
-            (population[i - 1][1], population[i][1]) = crossover(population[random.randint(0, pop_size - 1)][1], population[random.randint(0, pop_size - 1)][1])
-            i = i+1
+      # elitism, crossover, mutation, fitness
+      for i in range(elitism_pos, pop_size): 
+
+#         if random.random() <= crossover:
+#            (population[i - 1][1], population[i][1]) = crossover(population[random.randint(0, pop_size - 1)][1], population[random.randint(0, pop_size - 1)][1])
+#            i = i+1
 			
          if random.random() <= mutationRate:
-            population[i - 1][1] = mutation(population[i - 1][1])
+                 next_gen_pop = next_gen_pop[0:i] + [(0,mutation(population[i][1]))] + next_gen_pop[i+1:]
 
-      rank_population(population)
-      print population[0]
+      next_gen_pop = rank_population(next_gen_pop)
+     
+      print "gen %d" % (gen,)
+      print next_gen_pop[0]
 
+      population = next_gen_pop
+
+   print population[0]
 # test_mana_calc()
 # test_is_castable()
 
