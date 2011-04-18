@@ -9,12 +9,12 @@ pop_size = 20
 # ok, only 49 to start. I got tired of typing
 gene_list = [
 ("Forest", 1, "G"),("Swamp", 1, "B"),("Island", 1, "U"),("Mountain", 1, "R"),("Plains", 1, "W"),
-("Lightning Bolt", 2, "R"), ("Blodcrazed Goblin", 2, "R"), ("Goblin Balloon Brigade", 2, "R"), 
+("Lightning Bolt", 2, "R"), ("Blodcrazed Goblin", 2, "R"), ("Goblin Balloon Brigade", 2, "R"),
 ("Incite", 2, "R"), ("Reverberate", 2, "R R"), ("Ember Hauler", 2, "R R"), ("Thunder Strike", 2, "1 R"),
-("Goblin Piker", 2, "1 R"), ("Combust", 2, "1 R"), ("Fiery Hellhound", 2, "1 R R"), 
-("Ancient Hellkite", 2, "4 R R R"), ("Cyclops Gladiator", 2, "1 R R R"), ("Magma Phoenix", 2, "3 R R"), 
-("Destructive Force", 2, "5 R R"), ("Chandra's Outrage", 2, "2 R R"), ("Inferno Titan", 2, "4 R R"), 
-("Chandra's Spitfire", 2, "2 R"), 
+("Goblin Piker", 2, "1 R"), ("Combust", 2, "1 R"), ("Fiery Hellhound", 2, "1 R R"),
+("Ancient Hellkite", 2, "4 R R R"), ("Cyclops Gladiator", 2, "1 R R R"), ("Magma Phoenix", 2, "3 R R"),
+("Destructive Force", 2, "5 R R"), ("Chandra's Outrage", 2, "2 R R"), ("Inferno Titan", 2, "4 R R"),
+("Chandra's Spitfire", 2, "2 R"),
 ("Acidic Slime", 2, "3 G G"), ("Autumn's Veil", 2, "G"), ("Awakener Druid", 2, "2 G"),
 ("Back to Nature", 2, "1 G"), ("Llanowar Elves", 2, "G"), ("Birds of Paradise", 2, "G"),
 ("Brindle Boar", 2, "2 G"), ("Cudgel Troll", 2, "2 G G"), ("Runeclaw Bear", 2, "1 G"),
@@ -33,7 +33,7 @@ chrom_size = 20
 # start by pulling a random pile from the genelist
 def create_chromosome(size):
    deck = []
-   for i in range(size):  
+   for i in range(size):
       deck.append(gene_list[random.randint(0, len(gene_list) - 1)])
 
    return deck
@@ -71,13 +71,13 @@ def mana_calc(battlefield):
       if (battlefield[i][1] == 1):
          mana = mana + battlefield[i][2]
 
-   return mana   
+   return mana
 
 def test_mana_calc():
    battlefield = []
    # set some cards in the battlefield
    for i in range(20):
-      battlefield.append(gene_list[random.randint(0, len(gene_list) - 1)])  
+      battlefield.append(gene_list[random.randint(0, len(gene_list) - 1)])
    
    print battlefield
    print mana_calc(battlefield)
@@ -99,9 +99,9 @@ def is_castable(card, available_mana):
 
    for i in range(len(converted_mana)):
       if (len(available_mana) - 1) < int(converted_mana[i]):
-         return False 
+         return False
       else:
-         available_mana = available_mana[int(converted_mana[i]):] 
+         available_mana = available_mana[int(converted_mana[i]):]
    
    return True
 
@@ -125,7 +125,7 @@ def test_is_castable():
 
 def play_land(hand, battlefield, available_mana):
 
-   # determine is_castable with each type of land in hand 
+   # determine is_castable with each type of land in hand
    for i in range(len(hand)):
       temp_mana = available_mana
       if hand[i][1] == 1:
@@ -134,11 +134,11 @@ def play_land(hand, battlefield, available_mana):
          for j in range(len(hand)):
             if hand[j][1] == 2 and is_castable(hand[j], temp_mana):
                castable = True
-               break 
+               break
 
          if castable:
             battlefield.append(hand[i])
-            hand = hand[0:i] + hand[i+1:] 
+            hand = hand[0:i] + hand[i+1:]
             available_mana = temp_mana
             break
 
@@ -160,7 +160,7 @@ def play_turn(hand, deck, graveyard, exile, battlefield):
    # cast a card in hand if possible
    (hand, battlefield, available_mana, played) = play_hand_card(hand, battlefield, available_mana)
 
-   # otherwise, play a land to move closer to casting a card in hand 
+   # otherwise, play a land to move closer to casting a card in hand
    if not played:
       (hand, battlefield, available_mana) = play_land(hand, battlefield, available_mana)
 
@@ -186,7 +186,7 @@ def crossover(x,y):
    tempx = x[0:pos] + y[pos:]
    tempy = y[0:pos] + x[pos:]
  
-   return x, y 
+   return x, y
 
 # mutation - swap a random card from the deck with a card from the genelist
 mutationRate = .25
@@ -206,11 +206,25 @@ def main():
       population.append((0, create_chromosome(chrom_size)))
 
    rank_population(population)
+	
+   elitism_pos = int(elitism * pop_size)
 
-   while (population[0][0] != 13):
+   max_generations = 100
+   gen = 0
+   while (population[0][0] != 13 and gen <= max_generations):
+      gen = gen + 1
       # elitism, crossover, mutation, fitness
+		
+      for i in range(elitism_pos + 1, pop_size): 
+         if random.random() <= crossover:
+            (population[i - 1][1], population[i][1]) = crossover(population[random.randint(0, pop_size - 1)][1], population[random.randint(0, pop_size - 1)][1])
+            i = i+1
+			
+         if random.random() <= mutationRate:
+            population[i - 1][1] = mutation(population[i - 1][1])
+
       rank_population(population)
-      print population
+      print population[0]
 
 # test_mana_calc()
 # test_is_castable()
