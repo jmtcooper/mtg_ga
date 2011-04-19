@@ -9,7 +9,7 @@ pop_size = 20
 # ok, only 49 to start. I got tired of typing
 gene_list = [
 ("Forest", 1, "G"),("Swamp", 1, "B"),("Island", 1, "U"),("Mountain", 1, "R"),("Plains", 1, "W"),
-("Lightning Bolt", 2, "R"), ("Blodcrazed Goblin", 2, "R"), ("Goblin Balloon Brigade", 2, "R"),
+("Lightning Bolt", 2, "R"), ("Bloodcrazed Goblin", 2, "R"), ("Goblin Balloon Brigade", 2, "R"),
 ("Incite", 2, "R"), ("Reverberate", 2, "R R"), ("Ember Hauler", 2, "R R"), ("Thunder Strike", 2, "1 R"),
 ("Goblin Piker", 2, "1 R"), ("Combust", 2, "1 R"), ("Fiery Hellhound", 2, "1 R R"),
 ("Ancient Hellkite", 2, "4 R R R"), ("Cyclops Gladiator", 2, "1 R R R"), ("Magma Phoenix", 2, "3 R R"),
@@ -27,7 +27,7 @@ gene_list = [
 ]
 
 # each chromosome - deck of 20 cards
-chrom_size = 40
+chrom_size = 60
 
 # - read text file to generate list of 20 random cards (land/spells)?
 # start by pulling a random pile from the genelist
@@ -42,29 +42,37 @@ def create_chromosome(size):
 # perfect fit - spell cast all every turn (chrom_size - 7 -- initial hand)
 def fitness(chrom):
    # need to play with a copy of the deck, hence [:]
-   (x,y) = (play_deck(chrom[1][:]), chrom[1]) 
+   (x,y) = (play_deck(chrom[1][:]), chrom[1])
 
-   return (x,y) 
+   return (x,y)
 
 def play_deck(deck):
-   #random.shuffle(deck)
-
+   num_plays = 10
    num_turns = 0
+   tot_turns = 0
 
-   hand = deck[0:7]
-   deck = deck[7:]
-   graveyard = []
-   exile = []
-   battlefield = []
-   played = True
+   for i in range(num_plays):
+      num_turns = 0
+      tempdeck = deck[:]
+      random.shuffle(tempdeck)
 
-   while played and len(deck) > 0:
-      (hand, deck, graveyard, exile, battlefield, played) = play_turn(hand, deck, graveyard, exile, battlefield)
+      hand = tempdeck[0:7]
+      tempdeck = tempdeck[7:]
+      graveyard = []
+      exile = []
+      battlefield = []
+      played = True
 
-      if played:
-         num_turns = num_turns + 1
+      #while played and len(deck) > 0:
+      while len(tempdeck) > 0:
+         (hand, tempdeck, graveyard, exile, battlefield, played) = play_turn(hand, tempdeck, graveyard, exile, battlefield)
 
-   return num_turns
+         if played:
+            num_turns = num_turns + 1
+	    
+      tot_turns = tot_turns + num_turns
+
+   return tot_turns/num_plays
 
 def mana_calc(battlefield):
    mana = ""
@@ -182,9 +190,9 @@ def crossover(x,y):
    return (tempx, tempy)
 
 # mutation - swap a random card from the deck with a card from the genelist
-mutationRate = .05
+mutationRate = .15
 def mutation(chrom):
-   pos = random.randint(0, chrom_size - 1) 
+   pos = random.randint(0, chrom_size - 1)
    chrom[pos] = gene_list[random.randint(0, len(gene_list) - 1)]
 
    return chrom
@@ -203,31 +211,32 @@ def main():
 
    elitism_pos = int(elitism * pop_size)
    
-   max_generations = 200
+   max_generations = 500
    gen = 0
    max = 0
 
-   while (population[0][0] < (chrom_size - 7) and gen < max_generations):
+   #while (population[0][0] < (chrom_size - 7) and gen < max_generations):
+   while gen < max_generations:
       if max < population[0][0]:
          max = population[0][0]
 
       gen = gen + 1
       next_gen_pop = population[:]
-		
+
       # elitism, crossover, mutation, fitness
       # starting at elitism_pos handles "populating" elites
       max_crossover_pos = elitism_pos
-      for i in range(elitism_pos, pop_size): 
+      for i in range(elitism_pos, pop_size):
          # check for crossovers
-         if random.random() <= crossover_rate and max_crossover_pos < pop_size - 2:
+         if random.random() <= crossover_rate and max_crossover_pos < pop_size - 3:
             (child1, child2) = crossover(population[random.randint(0, pop_size -1)][1], population[random.randint(0, pop_size -1)][1])
             next_gen_pop[i] = (0, child1)
             i = i+1
             next_gen_pop[i] = (0, child2)
             max_crossover_pos = max_crossover_pos + 2
-			
+
       # check for mutations
-      for i in range(elitism_pos, pop_size): 
+      for i in range(elitism_pos, pop_size):
          if random.random() <= mutationRate:
             next_gen_pop[i] = (0, mutation(next_gen_pop[i][1]))
 
@@ -239,7 +248,7 @@ def main():
 
       population = next_gen_pop[:]
 
-      print "Gen: %d   Max fitness: %d   Current best fitness: %d" % (gen,max,population[0][0])
+      print "Gen: %d Max fitness: %d Current best fitness: %d" % (gen,max,population[0][0])
 
    print population[0]
 
