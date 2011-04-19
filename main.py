@@ -27,7 +27,7 @@ gene_list = [
 ]
 
 # each chromosome - deck of 20 cards
-chrom_size = 20
+chrom_size = 40
 
 # - read text file to generate list of 20 random cards (land/spells)?
 # start by pulling a random pile from the genelist
@@ -39,17 +39,15 @@ def create_chromosome(size):
    return deck
 
 # fitness - number of turns that a spell can be successfully cast
-# perfect fit - spell cast all 13 turns
+# perfect fit - spell cast all every turn (chrom_size - 7 -- initial hand)
 def fitness(chrom):
-   #print "Before playdeck - %r" % (chrom[1],)
    # need to play with a copy of the deck, hence [:]
    (x,y) = (play_deck(chrom[1][:]), chrom[1]) 
-   #print "After playdeck - %r" % (chrom[1],)
 
    return (x,y) 
 
 def play_deck(deck):
-   random.shuffle(deck)
+   #random.shuffle(deck)
 
    num_turns = 0
 
@@ -166,9 +164,9 @@ def play_turn(hand, deck, graveyard, exile, battlefield):
 
 def rank_population(pop):
    for i in range(len(pop)):
-      print "Fitness 1 %d" % pop[i][0]
+      #print "Fitness 1 %d" % pop[i][0]
       pop[i] = fitness(pop[i])
-      print "Fitness 2 %d" % pop[i][0]
+      #print "Fitness 2 %d" % pop[i][0]
 
    pop.sort(reverse=True)
 
@@ -181,12 +179,12 @@ def crossover(x,y):
    tempx = x[0:pos] + y[pos:]
    tempy = y[0:pos] + x[pos:]
  
-   return x, y
+   return (tempx, tempy)
 
 # mutation - swap a random card from the deck with a card from the genelist
-mutationRate = .25
+mutationRate = .05
 def mutation(chrom):
-   pos = random.randint(0, chrom_size - 1)
+   pos = random.randint(0, chrom_size - 1) 
    chrom[pos] = gene_list[random.randint(0, len(gene_list) - 1)]
 
    return chrom
@@ -198,59 +196,52 @@ def main():
    #each item in population has a fitness value and a deck list (chromosome)
    population = []
 
-   print "Initializing population..."
-
    for i in range(pop_size):
       population.append((0, create_chromosome(chrom_size)))
 
-   print "Calculating population..."
    population = rank_population(population)
-
-   print "Best fit: %d " % (population[0][0],) 
-   print "Best dck: %r " % (population[0][1],) 
 
    elitism_pos = int(elitism * pop_size)
    
-   max_generations = 2
+   max_generations = 200
    gen = 0
    max = 0
-   while (population[0][0] != 33 and gen <= max_generations):
+
+   while (population[0][0] < (chrom_size - 7) and gen < max_generations):
       if max < population[0][0]:
          max = population[0][0]
 
-      #print "1 - Best Fitness: %d" % (population[0][0],) 
-      #print "1 - Best Deck: %r" % (population[0][1],) 
-      
       gen = gen + 1
-      next_gen_pop = population
+      next_gen_pop = population[:]
 		
-      #print "2 - Best Fitness: %d" % (next_gen_pop[0][0],) 
-      #print "2 - Best Deck: %r" % (next_gen_pop[0][1],) 
-
       # elitism, crossover, mutation, fitness
+      # starting at elitism_pos handles "populating" elites
+      max_crossover_pos = elitism_pos
       for i in range(elitism_pos, pop_size): 
-
-#         if random.random() <= crossover:
-#            (population[i - 1][1], population[i][1]) = crossover(population[random.randint(0, pop_size - 1)][1], population[random.randint(0, pop_size - 1)][1])
-#            i = i+1
+         # check for crossovers
+         if random.random() <= crossover_rate and max_crossover_pos < pop_size - 2:
+            (child1, child2) = crossover(population[random.randint(0, pop_size -1)][1], population[random.randint(0, pop_size -1)][1])
+            next_gen_pop[i] = (0, child1)
+            i = i+1
+            next_gen_pop[i] = (0, child2)
+            max_crossover_pos = max_crossover_pos + 2
 			
+      # check for mutations
+      for i in range(elitism_pos, pop_size): 
          if random.random() <= mutationRate:
-                 next_gen_pop = next_gen_pop[0:i] + [(0,mutation(population[i][1]))] + next_gen_pop[i+1:]
+            next_gen_pop[i] = (0, mutation(next_gen_pop[i][1]))
 
-      #print "3 - Best Fitness: %d" % (next_gen_pop[0][0],) 
-      #print "3 - Best Deck: %r" % (next_gen_pop[0][1],) 
+      # fill in the rest of the array with new chromosomes
+      for i in range(max_crossover_pos, pop_size):
+         next_gen_pop[i] = (0, create_chromosome(chrom_size))
 
       next_gen_pop = rank_population(next_gen_pop)
 
-      #print "4 - Best Fitness: %d" % (next_gen_pop[0][0],) 
-      #print "4 - Best Deck: %r" % (next_gen_pop[0][1],) 
-     
-      population = next_gen_pop
-
-      #print "5 - Best Fitness: %d" % (population[0][0],) 
-      #print "5 - Best Deck: %r" % (population[0][1],) 
+      population = next_gen_pop[:]
 
       print "Gen: %d   Max fitness: %d   Current best fitness: %d" % (gen,max,population[0][0])
+
+   print population[0]
 
 # test_mana_calc()
 # test_is_castable()
