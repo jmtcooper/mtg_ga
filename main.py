@@ -47,7 +47,7 @@ def fitness(chrom):
    return (x,y)
 
 def play_deck(deck):
-   num_plays = 10
+   num_plays = 100
    num_turns = 0
    tot_turns = 0
 
@@ -63,8 +63,8 @@ def play_deck(deck):
       battlefield = []
       played = True
 
-      #while played and len(deck) > 0:
-      while len(tempdeck) > 0:
+      while played and len(deck) > 0:
+      #while len(tempdeck) > 0:
          (hand, tempdeck, graveyard, exile, battlefield, played) = play_turn(hand, tempdeck, graveyard, exile, battlefield)
 
          if played:
@@ -171,7 +171,7 @@ def play_turn(hand, deck, graveyard, exile, battlefield):
    return (hand, deck, graveyard, exile, battlefield, played)
 
 def rank_population(pop):
-   for i in range(len(pop)):
+   for i in range(int(elitism*len(pop)), len(pop)):
       #print "Fitness 1 %d" % pop[i][0]
       pop[i] = fitness(pop[i])
       #print "Fitness 2 %d" % pop[i][0]
