@@ -2,7 +2,7 @@
 import random
 
 # population - 20 decks
-pop_size = 20
+pop_size = 40
 
 # each gene - 1 card
 # here is a list of 100 cards to start each card has name/type/(cost/production)
@@ -63,7 +63,7 @@ def play_deck(deck):
       battlefield = []
       played = True
 
-      while played and len(deck) > 0:
+      while played and len(tempdeck) > 0:
       #while len(tempdeck) > 0:
          (hand, tempdeck, graveyard, exile, battlefield, played) = play_turn(hand, tempdeck, graveyard, exile, battlefield)
 
@@ -180,13 +180,20 @@ def rank_population(pop):
 
    return pop
 
-# crossover - basic one point crossover
+# crossover - two point crossover
 crossover_rate = .8
 def crossover(x,y):
    pos = random.randint(0, chrom_size - 1)
    tempx = x[0:pos] + y[pos:]
    tempy = y[0:pos] + x[pos:]
  
+   x = tempx
+   y = tempy
+
+   pos = random.randint(pos, chrom_size - 1)
+   tempx = x[0:pos] + y[pos:]
+   tempy = y[0:pos] + x[pos:]
+
    return (tempx, tempy)
 
 # mutation - swap a random card from the deck with a card from the genelist
@@ -230,10 +237,10 @@ def main():
          # check for crossovers
          if random.random() <= crossover_rate and max_crossover_pos < pop_size - 3:
             (child1, child2) = crossover(population[random.randint(0, pop_size -1)][1], population[random.randint(0, pop_size -1)][1])
-            next_gen_pop[i] = (0, child1)
-            i = i+1
-            next_gen_pop[i] = (0, child2)
-            max_crossover_pos = max_crossover_pos + 2
+            next_gen_pop[max_crossover_pos] = (0, child1)
+	    max_crossover_pos = max_crossover_pos + 1
+            next_gen_pop[max_crossover_pos] = (0, child2)
+            max_crossover_pos = max_crossover_pos + 1
 
       # check for mutations
       for i in range(elitism_pos, pop_size):
@@ -256,3 +263,4 @@ def main():
 # test_is_castable()
 
 main()
+
